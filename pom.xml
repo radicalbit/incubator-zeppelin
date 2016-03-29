@@ -92,19 +92,19 @@
     <module>markdown</module>
     <module>angular</module>
     <module>shell</module>
-    <module>hive</module>
-    <module>hbase</module>
-    <module>phoenix</module>
-    <module>postgresql</module>
+    <!--<module>hive</module>-->
+    <!--<module>hbase</module>-->
+    <!--<module>phoenix</module>-->
+    <!--<module>postgresql</module>-->
     <module>jdbc</module>
-    <module>tajo</module>
+    <!--<module>tajo</module>-->
     <module>file</module>
     <module>flink</module>
-    <module>ignite</module>
-    <module>kylin</module>
-    <module>lens</module>
+    <!--<module>ignite</module>-->
+    <!--<module>kylin</module>-->
+    <!--<module>lens</module>-->
     <module>cassandra</module>
-    <module>elasticsearch</module>
+    <!--<module>elasticsearch</module>-->
     <module>alluxio</module>
     <module>zeppelin-web</module>
     <module>zeppelin-server</module>
