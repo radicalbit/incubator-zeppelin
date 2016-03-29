@@ -33,11 +33,6 @@
   <name>Zeppelin: Display system apis</name>
   <url>http://incubator.zeppelin.apache.org</url>
 
-  <properties>
-    <scala.version>2.10.4</scala.version>
-    <scala.binary.version>2.10</scala.binary.version>
-  </properties>
-
   <dependencyManagement>
     <dependencies>
       <dependency>
@@ -184,4 +179,17 @@
       </plugin>
     </plugins>
   </build>
+
+  <profiles>
+    <profile>
+      <id>scala-2.11</id>
+      <dependencies>
+        <dependency>
+          <groupId>org.scala-lang</groupId>
+          <artifactId>scala-xml</artifactId>
+          <version>2.11.0-M4</version>
+        </dependency>
+      </dependencies>
+    </profile>
+  </profiles>
 </project>

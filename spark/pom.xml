@@ -36,9 +36,16 @@
 
   <properties>
     <spark.version>1.4.1</spark.version>
-    <scala.version>2.10.4</scala.version>
-    <scala.binary.version>2.10</scala.binary.version>
   </properties>
+
+  <profiles>  
+    <profile>
+      <id>scala-2.11</id>    
+      <properties>
+        <spark.version>2.0.0-SNAPSHOT</spark.version>
+      </properties>
+    </profile>
+  </profiles>
 
 
   <dependencies>
