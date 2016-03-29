@@ -87,8 +87,6 @@
     <module>zeppelin-interpreter</module>
     <module>zeppelin-zengine</module>
     <module>zeppelin-display</module>
-    <module>spark-dependencies</module>
-    <module>spark</module>
     <module>markdown</module>
     <module>angular</module>
     <module>shell</module>
@@ -100,7 +98,6 @@
     <module>tajo</module>
     <module>file</module>
     <module>flink</module>
-    <module>ignite</module>
     <module>kylin</module>
     <module>lens</module>
     <module>cassandra</module>
@@ -744,6 +741,48 @@
         </plugins>
       </build>
     </profile>
+    <profile>
+      <id>scala-2.11</id>
+
+    <activation>
+      <activeByDefault>true</activeByDefault>
+    </activation>
+      <!--activation>
+        <property><name>!scala-2.10</name></property>
+      </activation-->
+      <properties>
+        <scala.version>2.11.7</scala.version>
+        <scala.binary.version>2.11</scala.binary.version>
+      </properties>
+    </profile>
+	 <profile>
+    <id>radicalbit-repos</id>
+    <activation>
+      <activeByDefault>true</activeByDefault>
+    </activation>
+    <repositories>
+      <repository>
+        <id>radicalbit-releases</id>
+        <url>http://52.29.176.53:8080/repository/internal/</url>
+        <releases>
+          <enabled>true</enabled>
+        </releases>
+        <snapshots>
+          <enabled>false</enabled>
+        </snapshots>
+      </repository>
+      <repository>
+        <id>radicalbit-snapshots</id>
+        <url>http://52.29.176.53:8080/repository/snapshots/</url>
+        <releases>
+          <enabled>false</enabled>
+        </releases>
+        <snapshots>
+          <enabled>true</enabled>
+        </snapshots>
+      </repository>
+    </repositories>
+  </profile> 
   </profiles>
 
 </project>
