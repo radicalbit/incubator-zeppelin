@@ -17,13 +17,8 @@
  */
 package org.apache.zeppelin.flink;
 
-import java.io.BufferedReader;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.PrintStream;
-import java.io.PrintWriter;
-import java.net.URL;
-import java.net.URLClassLoader;
+import java.io.*;
+import java.net.*;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -31,6 +26,7 @@ import java.util.Properties;
 
 import org.apache.flink.api.scala.FlinkILoop;
 import org.apache.flink.configuration.Configuration;
+import org.apache.flink.hadoop.shaded.com.google.common.base.Strings;
 import org.apache.flink.runtime.minicluster.LocalFlinkMiniCluster;
 import org.apache.zeppelin.interpreter.Interpreter;
 import org.apache.zeppelin.interpreter.InterpreterContext;
@@ -69,14 +65,16 @@ public class FlinkInterpreter extends Interpreter {
     super(property);
   }
 
+
+  static final String YARN_PROPERTIES_JOBMANAGER_KEY = "jobManager";
+  static final String HOST = "host";
   static {
     Interpreter.register(
         "flink",
         "flink",
         FlinkInterpreter.class.getName(),
         new InterpreterPropertyBuilder()
-                .add("host", "local",
-                    "host name of running JobManager. 'local' runs flink in local mode")
+          .add("host", "local", "host name of running JobManager. 'local' runs flink in local mode")
           .add("port", "6123", "port of running JobManager")
           .build()
     );
@@ -93,11 +91,15 @@ public class FlinkInterpreter extends Interpreter {
       flinkConf.setString(key, val);
     }
 
-    if (localMode()) {
-      startFlinkMiniCluster();
-    }
 
-    flinkIloop = new FlinkILoop(getHost(), getPort(), (BufferedReader) null, new PrintWriter(out));
+    final HostPort hostPort = configureEnvironment();
+
+    flinkIloop = new FlinkILoop(
+            hostPort.host,
+            hostPort.port,
+            (BufferedReader) null,
+            new PrintWriter(out));
+
     flinkIloop.settings_$eq(createSettings());
     flinkIloop.createInterpreter();
     
@@ -122,25 +124,66 @@ public class FlinkInterpreter extends Interpreter {
     //imain.bindValue("env", env);
   }
 
-  private boolean localMode() {
-    String host = getProperty("host");
-    return host == null || host.trim().length() == 0 || host.trim().equals("local");
+  class HostPort { public String host; public int port; }
+
+
+  private HostPort configureEnvironment() {
+
+    final String host = Strings.nullToEmpty(getProperty(HOST).trim());
+    final HostPort hostPort = new HostPort();
+    if (host.equals("local") || host.equals("")) {
+      startFlinkMiniCluster();
+      hostPort.host = "localhost";
+      hostPort.port = localFlinkCluster.getLeaderRPCPort();
+    } else if (host.equals("yarn")) {
+      final String propertiesLocation = getProperty("yarn-properties");
+      File propertiesFile = new File(propertiesLocation);
+      Properties properties = new Properties();
+      if (propertiesFile.exists()) {
+        FileInputStream inputStream = null;
+        try {
+          inputStream = new FileInputStream(propertiesFile);
+          properties.load(inputStream);
+        } catch (IOException e) {
+          e.printStackTrace();
+        } finally {
+          if (inputStream != null) {
+            try {
+              inputStream.close();
+            } catch (IOException e) {
+              e.printStackTrace();
+            }
+          }
+        }
+      } else {
+        throw new IllegalArgumentException("Scala Shell cannot fetch YARN properties.");
+      }
+
+      String addressInStr = properties.getProperty(YARN_PROPERTIES_JOBMANAGER_KEY);
+      InetSocketAddress address = parseHostPortAddress(addressInStr);
+      hostPort.host = address.getHostString();
+      hostPort.port = address.getPort();
+    } else {
+      hostPort.host = host;
+      hostPort.port = Integer.parseInt(getProperty("port"));
+    }
+
+    return hostPort;
   }
 
-  private String getHost() {
-    if (localMode()) {
-      return "localhost";
-    } else {
-      return getProperty("host");
+  private static InetSocketAddress parseHostPortAddress(String hostport) {
+    URI uri;
+    try {
+      uri = new URI("my://" + hostport);
+    } catch (URISyntaxException e) {
+      throw new RuntimeException("Could not identify hostname and port in '" + hostport + "'.", e);
     }
-  }
-
-  private int getPort() {
-    if (localMode()) {
-      return localFlinkCluster.getLeaderRPCPort();
-    } else {
-      return Integer.parseInt(getProperty("port"));
+    String host = uri.getHost();
+    int port = uri.getPort();
+    if (host == null || port == -1) {
+      throw new RuntimeException("Could not identify hostname and port in '" + hostport + "'.");
     }
+    return new InetSocketAddress(host, port);
   }
 
   private Settings createSettings() {
@@ -224,7 +267,8 @@ public class FlinkInterpreter extends Interpreter {
   public void close() {
     flinkIloop.closeInterpreter();
 
-    if (localMode()) {
+    final String host = Strings.nullToEmpty(getProperty(HOST).trim());
+    if (host.equals("local") || host.equals("")) {
       stopFlinkMiniCluster();
     }
   }
