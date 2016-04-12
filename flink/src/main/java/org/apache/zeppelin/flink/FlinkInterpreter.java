@@ -94,6 +94,7 @@ public class FlinkInterpreter extends Interpreter {
 
     final HostPort hostPort = configureEnvironment();
 
+    logger.info("Interpreter attempts to connect at JobManager (" + hostPort.toString() + ")");
     flinkIloop = new FlinkILoop(
             hostPort.host,
             hostPort.port,
@@ -124,7 +125,15 @@ public class FlinkInterpreter extends Interpreter {
     //imain.bindValue("env", env);
   }
 
-  class HostPort { public String host; public int port; }
+  class HostPort {
+    String host;
+    int port;
+
+    @Override
+    public String toString() {
+      return host + ":" + port;
+    }
+  }
 
 
   private HostPort configureEnvironment() {
@@ -183,6 +192,7 @@ public class FlinkInterpreter extends Interpreter {
     if (host == null || port == -1) {
       throw new RuntimeException("Could not identify hostname and port in '" + hostport + "'.");
     }
+
     return new InetSocketAddress(host, port);
   }
 
