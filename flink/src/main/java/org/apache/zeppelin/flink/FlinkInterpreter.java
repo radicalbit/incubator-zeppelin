@@ -26,6 +26,7 @@ import java.util.Properties;
 
 import org.apache.flink.api.scala.FlinkILoop;
 import org.apache.flink.configuration.Configuration;
+import org.apache.flink.configuration.GlobalConfiguration;
 import org.apache.flink.hadoop.shaded.com.google.common.base.Strings;
 import org.apache.flink.runtime.minicluster.LocalFlinkMiniCluster;
 import org.apache.zeppelin.interpreter.Interpreter;
@@ -38,13 +39,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import scala.Console;
+import scala.Option;
 import scala.None;
 import scala.Some;
 import scala.runtime.AbstractFunction0;
 import scala.tools.nsc.Settings;
 import scala.tools.nsc.interpreter.IMain;
 import scala.tools.nsc.interpreter.NamedParamClass;
-import scala.tools.nsc.interpreter.NamedParamClass$;
 import scala.tools.nsc.interpreter.Results;
 import scala.tools.nsc.settings.MutableSettings.BooleanSetting;
 import scala.tools.nsc.settings.MutableSettings.PathSetting;
@@ -91,14 +92,17 @@ public class FlinkInterpreter extends Interpreter {
       flinkConf.setString(key, val);
     }
 
+    Configuration configuration =  GlobalConfiguration.getConfiguration();
+    logger.info("Configuration flink: " + configuration.toString() );
 
     final HostPort hostPort = configureEnvironment();
-
     logger.info("Interpreter attempts to connect at JobManager (" + hostPort.toString() + ")");
     flinkIloop = new FlinkILoop(
             hostPort.host,
             hostPort.port,
-            (BufferedReader) null,
+            configuration,
+            (Option<String[]>) null,
+            (Option<BufferedReader>) null,
             new PrintWriter(out));
 
     flinkIloop.settings_$eq(createSettings());
@@ -135,10 +139,13 @@ public class FlinkInterpreter extends Interpreter {
     }
   }
 
+  private String getHost() {
+    return Strings.nullToEmpty(getProperty(HOST).trim());
+  }
 
   private HostPort configureEnvironment() {
 
-    final String host = Strings.nullToEmpty(getProperty(HOST).trim());
+    final String host = getHost();
     final HostPort hostPort = new HostPort();
     if (host.equals("local") || host.equals("")) {
       startFlinkMiniCluster();
