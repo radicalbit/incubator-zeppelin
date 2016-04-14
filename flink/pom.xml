@@ -397,16 +397,4 @@
     </repository>
   </repositories>
 
-  <profiles>
-    <profile>
-      <id>scala-2.11</id>
-      <dependencies>
-        <!--<dependency>-->
-          <!--<groupId>org.apache.flink</groupId>-->
-          <!--<artifactId>flink-core_${scala.binary.version}</artifactId>-->
-          <!--<version>${flink.version}</version>-->
-        <!--</dependency>-->
-      </dependencies>
-    </profile>
-  </profiles>
 </project>

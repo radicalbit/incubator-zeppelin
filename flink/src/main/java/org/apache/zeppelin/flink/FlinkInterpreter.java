@@ -26,6 +26,7 @@ import java.util.Properties;
 
 import org.apache.flink.api.scala.FlinkILoop;
 import org.apache.flink.configuration.Configuration;
+import org.apache.flink.configuration.GlobalConfiguration;
 import org.apache.flink.hadoop.shaded.com.google.common.base.Strings;
 import org.apache.flink.runtime.minicluster.LocalFlinkMiniCluster;
 import org.apache.zeppelin.interpreter.Interpreter;
@@ -83,7 +84,7 @@ public class FlinkInterpreter extends Interpreter {
   @Override
   public void open() {
     out = new ByteArrayOutputStream();
-    flinkConf = new org.apache.flink.configuration.Configuration();
+    flinkConf = GlobalConfiguration.getConfiguration();
     Properties intpProperty = getProperty();
     for (Object k : intpProperty.keySet()) {
       String key = (String) k;
@@ -98,6 +99,7 @@ public class FlinkInterpreter extends Interpreter {
     flinkIloop = new FlinkILoop(
             hostPort.host,
             hostPort.port,
+            flinkConf,
             (BufferedReader) null,
             new PrintWriter(out));
 
