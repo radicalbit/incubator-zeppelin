@@ -27,8 +27,10 @@ import java.util.Properties;
 import org.apache.flink.api.scala.FlinkILoop;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.configuration.GlobalConfiguration;
+import org.apache.flink.configuration.ConfigConstants;
 import org.apache.flink.hadoop.shaded.com.google.common.base.Strings;
 import org.apache.flink.runtime.minicluster.LocalFlinkMiniCluster;
+
 import org.apache.zeppelin.interpreter.Interpreter;
 import org.apache.zeppelin.interpreter.InterpreterContext;
 import org.apache.zeppelin.interpreter.InterpreterPropertyBuilder;
@@ -91,17 +93,15 @@ public class FlinkInterpreter extends Interpreter {
       String val = toString(intpProperty.get(key));
       flinkConf.setString(key, val);
     }
-
-    Configuration configuration =  GlobalConfiguration.getConfiguration();
-    logger.info("Configuration flink: " + configuration.toString() );
+    logger.info("Configuration flink: " + flinkConf.toString() );
 
     final HostPort hostPort = configureEnvironment();
     logger.info("Interpreter attempts to connect at JobManager (" + hostPort.toString() + ")");
     flinkIloop = new FlinkILoop(
             hostPort.host,
             hostPort.port,
-            configuration,
-            (Option<String[]>) null,
+            flinkConf,
+            new Some<>(new String[]{}),
             (Option<BufferedReader>) null,
             new PrintWriter(out));
 
