@@ -58,8 +58,8 @@ import scala.tools.nsc.settings.MutableSettings.PathSetting;
 public class FlinkInterpreter extends Interpreter {
   Logger logger = LoggerFactory.getLogger(FlinkInterpreter.class);
   private ByteArrayOutputStream out;
-  private Configuration flinkConf;
   private LocalFlinkMiniCluster localFlinkCluster;
+  private Configuration flinkConfiguration;
   private FlinkILoop flinkIloop;
   private Map<String, Object> binder;
   private IMain imain;
@@ -71,6 +71,7 @@ public class FlinkInterpreter extends Interpreter {
 
   static final String YARN_PROPERTIES_JOBMANAGER_KEY = "jobManager";
   static final String HOST = "host";
+  static final String FLINK_CONF_DIR = "flink.conf.dir";
   static {
     Interpreter.register(
         "flink",
@@ -83,24 +84,45 @@ public class FlinkInterpreter extends Interpreter {
     );
   }
 
+  private static String sanitize(String property) {
+    return Strings.nullToEmpty(property).trim();
+  }
+
+  private String getHost() {
+    return sanitize(getProperty(HOST));
+  }
+
+  private String getFlinkConfiguration() {
+    return sanitize(getProperty(FLINK_CONF_DIR));
+  }
+
   @Override
   public void open() {
     out = new ByteArrayOutputStream();
-    flinkConf = new org.apache.flink.configuration.Configuration();
-    Properties intpProperty = getProperty();
-    for (Object k : intpProperty.keySet()) {
-      String key = (String) k;
-      String val = toString(intpProperty.get(key));
-      flinkConf.setString(key, val);
-    }
-    logger.info("Configuration flink: " + flinkConf.toString() );
 
-    final HostPort hostPort = configureEnvironment();
-    logger.info("Interpreter attempts to connect at JobManager (" + hostPort.toString() + ")");
+    final String flinkConfigurationPath = getFlinkConfiguration();
+    if (flinkConfigurationPath.length() > 0 ){
+      GlobalConfiguration.loadConfiguration(flinkConfigurationPath);
+      flinkConfiguration = GlobalConfiguration.getConfiguration();
+    } else {
+      Properties intpProperty = getProperty();
+      flinkConfiguration = new Configuration();
+      for (Object k : intpProperty.keySet()) {
+        String key = (String) k;
+        String val = toString(intpProperty.get(key));
+        flinkConfiguration.setString(key, val);
+      }
+    }
+
+    final InetSocketAddress jmAddress = configureEnvironment();
+
+    logger.info("Configuration flink: " + GlobalConfiguration.getConfiguration().toString() );
+    logger.info("Interpreter attempts to connect at JobManager (" + jmAddress.toString() + ")");
+
     flinkIloop = new FlinkILoop(
-            hostPort.host,
-            hostPort.port,
-            flinkConf,
+            jmAddress.getHostString(),
+            jmAddress.getPort(),
+            flinkConfiguration,
             new Some<>(new String[]{}),
             (Option<BufferedReader>) null,
             new PrintWriter(out));
@@ -129,62 +151,62 @@ public class FlinkInterpreter extends Interpreter {
     //imain.bindValue("env", env);
   }
 
-  class HostPort {
-    String host;
-    int port;
+  private InetSocketAddress configureEnvironment() {
 
-    @Override
-    public String toString() {
-      return host + ":" + port;
-    }
-  }
-
-  private String getHost() {
-    return Strings.nullToEmpty(getProperty(HOST).trim());
-  }
-
-  private HostPort configureEnvironment() {
-
+    final InetSocketAddress inetSocketAddress;
     final String host = getHost();
-    final HostPort hostPort = new HostPort();
-    if (host.equals("local") || host.equals("")) {
-      startFlinkMiniCluster();
-      hostPort.host = "localhost";
-      hostPort.port = localFlinkCluster.getLeaderRPCPort();
-    } else if (host.equals("yarn")) {
-      final String propertiesLocation = getProperty("yarn-properties");
-      File propertiesFile = new File(propertiesLocation);
-      Properties properties = new Properties();
-      if (propertiesFile.exists()) {
-        FileInputStream inputStream = null;
-        try {
-          inputStream = new FileInputStream(propertiesFile);
-          properties.load(inputStream);
-        } catch (IOException e) {
-          e.printStackTrace();
-        } finally {
-          if (inputStream != null) {
-            try {
-              inputStream.close();
-            } catch (IOException e) {
-              e.printStackTrace();
-            }
+
+    switch (host){
+        case "local":
+        case "":
+          startFlinkMiniCluster();
+          inetSocketAddress =
+                  new InetSocketAddress("localhost", localFlinkCluster.getLeaderRPCPort());
+          break;
+        case "yarn":
+          Properties properties = getPropertiesFromYarnProperties();
+          String addressInStr = properties.getProperty(YARN_PROPERTIES_JOBMANAGER_KEY);
+          inetSocketAddress = parseHostPortAddress(addressInStr);
+          break;
+        default:
+          final int port = Integer.parseInt(getProperty("port"));
+          inetSocketAddress = new InetSocketAddress(host, port);
+          break;
+    }
+
+    return inetSocketAddress;
+  }
+
+  private Properties getPropertiesFromYarnProperties() {
+    return fromFileToProperties(getProperty("yarn-properties"));
+  }
+
+  private static Properties fromFileToProperties(String propertiesLocation) {
+
+    final File propertiesFile = new File(propertiesLocation);
+    final Properties properties = new Properties();
+
+    if (propertiesFile.exists()) {
+      FileInputStream inputStream = null;
+      try {
+        inputStream = new FileInputStream(propertiesFile);
+        properties.load(inputStream);
+      } catch (IOException e) {
+        e.printStackTrace();
+      } finally {
+        if (inputStream != null) {
+          try {
+            inputStream.close();
+          } catch (IOException e) {
+            e.printStackTrace();
           }
         }
-      } else {
-        throw new IllegalArgumentException("Scala Shell cannot fetch YARN properties.");
       }
-
-      String addressInStr = properties.getProperty(YARN_PROPERTIES_JOBMANAGER_KEY);
-      InetSocketAddress address = parseHostPortAddress(addressInStr);
-      hostPort.host = address.getHostString();
-      hostPort.port = address.getPort();
     } else {
-      hostPort.host = host;
-      hostPort.port = Integer.parseInt(getProperty("port"));
+      throw new IllegalArgumentException("Flink Interpreter cannot fetch properties.");
     }
 
-    return hostPort;
+    return properties;
   }
 
   private static InetSocketAddress parseHostPortAddress(String hostport) {
@@ -392,7 +414,7 @@ public class FlinkInterpreter extends Interpreter {
   }
 
   private void startFlinkMiniCluster() {
-    localFlinkCluster = new LocalFlinkMiniCluster(flinkConf, false);
+    localFlinkCluster = new LocalFlinkMiniCluster(flinkConfiguration, false);
 
     try {
       localFlinkCluster.start(true);
