@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.Properties;
 
 import org.apache.flink.api.scala.FlinkILoop;
+import org.apache.flink.client.ClientUtils;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.configuration.GlobalConfiguration;
 import org.apache.flink.configuration.ConfigConstants;
@@ -166,7 +167,7 @@ public class FlinkInterpreter extends Interpreter {
         case "yarn":
           Properties properties = getPropertiesFromYarnProperties();
           String addressInStr = properties.getProperty(YARN_PROPERTIES_JOBMANAGER_KEY);
-          inetSocketAddress = parseHostPortAddress(addressInStr);
+          inetSocketAddress = ClientUtils.parseHostPortAddress(addressInStr);
           break;
         default:
           final int port = Integer.parseInt(getProperty("port"));
@@ -207,22 +208,6 @@ public class FlinkInterpreter extends Interpreter {
     }
 
     return properties;
-  }
-
-  private static InetSocketAddress parseHostPortAddress(String hostport) {
-    URI uri;
-    try {
-      uri = new URI("my://" + hostport);
-    } catch (URISyntaxException e) {
-      throw new RuntimeException("Could not identify hostname and port in '" + hostport + "'.", e);
-    }
-    String host = uri.getHost();
-    int port = uri.getPort();
-    if (host == null || port == -1) {
-      throw new RuntimeException("Could not identify hostname and port in '" + hostport + "'.");
-    }
-
-    return new InetSocketAddress(host, port);
   }
 
   private Settings createSettings() {
