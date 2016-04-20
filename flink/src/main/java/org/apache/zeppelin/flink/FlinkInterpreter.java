@@ -57,7 +57,9 @@ import scala.tools.nsc.settings.MutableSettings.PathSetting;
  * Interpreter for Apache Flink (http://flink.apache.org)
  */
 public class FlinkInterpreter extends Interpreter {
-  Logger logger = LoggerFactory.getLogger(FlinkInterpreter.class);
+
+  private static  Logger logger = LoggerFactory.getLogger(FlinkInterpreter.class);
+
   private ByteArrayOutputStream out;
   private LocalFlinkMiniCluster localFlinkCluster;
   private Configuration flinkConfiguration;
@@ -102,13 +104,13 @@ public class FlinkInterpreter extends Interpreter {
         inputStream = new FileInputStream(propertiesFile);
         properties.load(inputStream);
       } catch (IOException e) {
-        e.printStackTrace();
+        logger.error(e.getMessage(), e);
       } finally {
         if (inputStream != null) {
           try {
             inputStream.close();
           } catch (IOException e) {
-            e.printStackTrace();
+            logger.error(e.getMessage(), e);
           }
         }
       }
@@ -312,7 +314,7 @@ public class FlinkInterpreter extends Interpreter {
   public void close() {
     flinkIloop.closeInterpreter();
 
-    final String host = Strings.nullToEmpty(getProperty(HOST).trim());
+    final String host = getHost();
     if (host.equals("local") || host.equals("")) {
       stopFlinkMiniCluster();
     }
