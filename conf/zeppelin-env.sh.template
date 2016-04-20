@@ -64,3 +64,8 @@
 # export ZEPPELIN_SPARK_MAXRESULT       # Max number of SparkSQL result to display. 1000 by default.
 # export ZEPPELIN_WEBSOCKET_MAX_TEXT_MESSAGE_SIZE       # Size in characters of the maximum text message to be received by websocket. Defaults to 1024000
 
+## Flink interpreter options ##
+##
+# export FLINK_CONF_DIR         # Path to the Flink configuration (flink-conf.yaml)
+# export FLINK_USER             # Username that runs Flink service
+

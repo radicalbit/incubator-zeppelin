@@ -773,4 +773,28 @@
     </profile>
   </profiles>
 
+  <repositories>
+    <repository>
+      <id>radicalbit-releases</id>
+      <url>https://public-repo.radicalbit.io/maven/repository/internal/</url>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+    </repository>
+    <repository>
+      <id>radicalbit-snapshots</id>
+      <url>https://public-repo.radicalbit.io/maven/repository/snapshots/</url>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+    </repository>
+  </repositories>
+
+
 </project>
