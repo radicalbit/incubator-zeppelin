@@ -69,10 +69,12 @@ public class FlinkInterpreter extends Interpreter {
     super(property);
   }
 
-
-  static final String YARN_PROPERTIES_JOBMANAGER_KEY = "jobManager";
-  static final String HOST = "host";
-  static final String FLINK_CONF_DIR = "flink.conf.dir";
+  private static final String YARN_PROPERTIES_FILE = ".yarn-properties-";
+  private static final String YARN_PROPERTIES_JOBMANAGER_KEY = "jobManager";
+  private static final String FLINK_CONF_DIR_ENV = "FLINK_CONF_DIR";
+  private static final String FLINK_USER = "FLINK_USER";
+  private static final String HOST = "host";
+  private static final String FLINK_CONF_DIR = "flink.conf.dir";
   static {
     Interpreter.register(
         "flink",
@@ -89,12 +91,89 @@ public class FlinkInterpreter extends Interpreter {
     return Strings.nullToEmpty(property).trim();
   }
 
+  private static Properties fromFileToProperties(String propertiesLocation) {
+
+    final File propertiesFile = new File(propertiesLocation);
+    final Properties properties = new Properties();
+
+    if (propertiesFile.exists()) {
+      FileInputStream inputStream = null;
+      try {
+        inputStream = new FileInputStream(propertiesFile);
+        properties.load(inputStream);
+      } catch (IOException e) {
+        e.printStackTrace();
+      } finally {
+        if (inputStream != null) {
+          try {
+            inputStream.close();
+          } catch (IOException e) {
+            e.printStackTrace();
+          }
+        }
+      }
+    } else {
+      throw new IllegalArgumentException("Flink Interpreter cannot fetch properties.");
+    }
+
+    return properties;
+  }
+
+  private static String getUser() {
+
+    final String userFlinkEnv = System.getenv(FLINK_USER);
+    return (userFlinkEnv == null) ?  System.getProperty("user.name") : userFlinkEnv;
+  }
+
   private String getHost() {
     return sanitize(getProperty(HOST));
   }
 
   private String getFlinkConfiguration() {
-    return sanitize(getProperty(FLINK_CONF_DIR));
+
+    final String flinkConfigurationEnv = System.getenv(FLINK_CONF_DIR_ENV);
+    return (flinkConfigurationEnv == null)
+            ? sanitize(getProperty(FLINK_CONF_DIR))
+            : flinkConfigurationEnv;
+  }
+
+  private InetSocketAddress configureEnvironment() {
+
+    final InetSocketAddress inetSocketAddress;
+    final String host = getHost();
+
+    switch (host){
+        case "local":
+        case "":
+          startFlinkMiniCluster();
+          inetSocketAddress =
+                  new InetSocketAddress("localhost", localFlinkCluster.getLeaderRPCPort());
+          break;
+        case "yarn":
+          Properties properties = getPropertiesFromYarnProperties();
+          String addressInStr = properties.getProperty(YARN_PROPERTIES_JOBMANAGER_KEY);
+          inetSocketAddress = ClientUtils.parseHostPortAddress(addressInStr);
+          break;
+        default:
+          final int port = Integer.parseInt(getProperty("port"));
+          inetSocketAddress = new InetSocketAddress(host, port);
+          break;
+    }
+
+    return inetSocketAddress;
+  }
+
+  private String yarnPropertiesLocation() {
+    final String defaultPropertiesFileLocation = System.getProperty("java.io.tmpdir");
+    final String tmpDir = flinkConfiguration.getString(
+            ConfigConstants.YARN_PROPERTIES_FILE_LOCATION,
+            defaultPropertiesFileLocation);
+    return tmpDir + File.separator + YARN_PROPERTIES_FILE + getUser();
+  }
+
+  private Properties getPropertiesFromYarnProperties() {
+    final String yarnPropertiesLocation = yarnPropertiesLocation();
+    return fromFileToProperties(yarnPropertiesLocation);
   }
 
   @Override
@@ -150,64 +229,6 @@ public class FlinkInterpreter extends Interpreter {
     imain.bind(new NamedParamClass("env",
             "org.apache.flink.api.scala.ExecutionEnvironment", env));
     //imain.bindValue("env", env);
-  }
-
-  private InetSocketAddress configureEnvironment() {
-
-    final InetSocketAddress inetSocketAddress;
-    final String host = getHost();
-
-    switch (host){
-        case "local":
-        case "":
-          startFlinkMiniCluster();
-          inetSocketAddress =
-                  new InetSocketAddress("localhost", localFlinkCluster.getLeaderRPCPort());
-          break;
-        case "yarn":
-          Properties properties = getPropertiesFromYarnProperties();
-          String addressInStr = properties.getProperty(YARN_PROPERTIES_JOBMANAGER_KEY);
-          inetSocketAddress = ClientUtils.parseHostPortAddress(addressInStr);
-          break;
-        default:
-          final int port = Integer.parseInt(getProperty("port"));
-          inetSocketAddress = new InetSocketAddress(host, port);
-          break;
-    }
-
-    return inetSocketAddress;
-  }
-
-  private Properties getPropertiesFromYarnProperties() {
-    return fromFileToProperties(getProperty("yarn-properties"));
-  }
-
-  private static Properties fromFileToProperties(String propertiesLocation) {
-
-    final File propertiesFile = new File(propertiesLocation);
-    final Properties properties = new Properties();
-
-    if (propertiesFile.exists()) {
-      FileInputStream inputStream = null;
-      try {
-        inputStream = new FileInputStream(propertiesFile);
-        properties.load(inputStream);
-      } catch (IOException e) {
-        e.printStackTrace();
-      } finally {
-        if (inputStream != null) {
-          try {
-            inputStream.close();
-          } catch (IOException e) {
-            e.printStackTrace();
-          }
-        }
-      }
-    } else {
-      throw new IllegalArgumentException("Flink Interpreter cannot fetch properties.");
-    }
-
-    return properties;
   }
 
   private Settings createSettings() {
