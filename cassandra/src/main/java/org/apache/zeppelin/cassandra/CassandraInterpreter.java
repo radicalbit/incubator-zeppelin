@@ -19,6 +19,9 @@ package org.apache.zeppelin.cassandra;
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.ProtocolOptions.Compression;
 import com.datastax.driver.core.Session;
+import com.typesafe.config.Config;
+import com.typesafe.config.ConfigFactory;
+import io.radicalbit.cassandra.kerberosauthentication.KerberosAuthenticationProvider;
 import org.apache.zeppelin.interpreter.Interpreter;
 import org.apache.zeppelin.interpreter.InterpreterContext;
 import org.apache.zeppelin.interpreter.InterpreterPropertyBuilder;
@@ -28,9 +31,7 @@ import org.apache.zeppelin.scheduler.SchedulerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Properties;
+import java.util.*;
 
 import static com.datastax.driver.core.ProtocolOptions.DEFAULT_MAX_SCHEMA_AGREEMENT_WAIT_SECONDS;
 import static java.lang.Integer.parseInt;
@@ -265,12 +266,17 @@ public class CassandraInterpreter extends Interpreter {
       hosts.append(address).append(",");
     }
 
+    // convert Properties to Typesafe Config
+    final Config config = (getProperty("kerberos.qop") != null)
+            ? ConfigFactory.parseMap(new HashMap<String, String>((Map) getProperty()))
+            :  null;
+
     LOGGER.info("Bootstrapping Cassandra Java Driver to connect to " + hosts.toString() +
                   "on port " + port);
 
     Compression compression = driverConfig.getCompressionProtocol(this);
 
-    cluster  = Cluster.builder()
+    Cluster.Builder builder  = Cluster.builder()
       .addContactPoints(addresses)
       .withPort(port)
       .withProtocolVersion(driverConfig.getProtocolVersion(this))
@@ -286,9 +292,14 @@ public class CassandraInterpreter extends Interpreter {
               parseInt(getProperty(CASSANDRA_MAX_SCHEMA_AGREEMENT_WAIT_SECONDS)))
       .withPoolingOptions(driverConfig.getPoolingOptions(this))
       .withQueryOptions(driverConfig.getQueryOptions(this))
-      .withSocketOptions(driverConfig.getSocketOptions(this))
-      .build();
+      .withSocketOptions(driverConfig.getSocketOptions(this));
 
+    // kerberos check
+    if (config != null) {
+      builder = builder.withAuthProvider(new KerberosAuthenticationProvider(config));
+    }
+
+    cluster = builder.build();
     session = cluster.connect();
     helper = new InterpreterLogic(session);
   }
