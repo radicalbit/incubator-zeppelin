@@ -19,8 +19,6 @@ package org.apache.zeppelin.cassandra;
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.ProtocolOptions.Compression;
 import com.datastax.driver.core.Session;
-import com.typesafe.config.Config;
-import com.typesafe.config.ConfigFactory;
 import io.radicalbit.cassandra.kerberosauthentication.KerberosAuthenticationProvider;
 import org.apache.zeppelin.interpreter.Interpreter;
 import org.apache.zeppelin.interpreter.InterpreterContext;
@@ -256,6 +254,19 @@ public class CassandraInterpreter extends Interpreter {
         .build());
   }
 
+  private Properties getKerberosProperties() {
+    final Set<Object> keys = getProperty().keySet();
+    final Properties kerberosProperties = new Properties();
+
+    for (Object k: keys) {
+      String key = (String) k;
+      if (key.contains("kerberos")){
+        kerberosProperties.setProperty(key, getProperty(key));
+      }
+    }
+    return kerberosProperties;
+  }
+
   @Override
   public void open() {
 
@@ -265,11 +276,6 @@ public class CassandraInterpreter extends Interpreter {
     for (String address : addresses) {
       hosts.append(address).append(",");
     }
-
-    // convert Properties to Typesafe Config
-    final Config config = (getProperty("kerberos.qop") != null)
-            ? ConfigFactory.parseMap(new HashMap<String, String>((Map) getProperty()))
-            :  null;
 
     LOGGER.info("Bootstrapping Cassandra Java Driver to connect to " + hosts.toString() +
                   "on port " + port);
@@ -294,9 +300,9 @@ public class CassandraInterpreter extends Interpreter {
       .withQueryOptions(driverConfig.getQueryOptions(this))
       .withSocketOptions(driverConfig.getSocketOptions(this));
 
-    // kerberos check
-    if (config != null) {
-      builder = builder.withAuthProvider(new KerberosAuthenticationProvider(config));
+    final Properties kerberosProperties = getKerberosProperties();
+    if (kerberosProperties != null && !kerberosProperties.isEmpty()) {
+      builder = builder.withAuthProvider(new KerberosAuthenticationProvider(kerberosProperties));
     }
 
     cluster = builder.build();
