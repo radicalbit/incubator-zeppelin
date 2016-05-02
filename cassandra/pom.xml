@@ -70,6 +70,20 @@
             <version>${cassandra.guava.version}</version>
         </dependency>
 
+        <!-- Kerberos libraries -->
+
+        <dependency>
+            <groupId>com.typesafe</groupId>
+            <artifactId>config</artifactId>
+            <version>1.2.1</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.radicalbit</groupId>
+            <artifactId>cassandra-kerberos-client</artifactId>
+            <version>1.0</version>
+        </dependency>
+
         <!-- Compression libraries for the cassandra-driver protocol. -->
         <!-- Include both compression options to make to simplify deployment. -->
 
