@@ -302,7 +302,7 @@ public class CassandraInterpreter extends Interpreter {
 
     /** Enable Kerberos */
     final Properties kerberosProperties = getKerberosProperties();
-    if (kerberosProperties != null && !kerberosProperties.isEmpty()) {
+    if (!kerberosProperties.isEmpty()) {
       builder = builder.withAuthProvider(new KerberosAuthenticationProvider(kerberosProperties));
     }
 
