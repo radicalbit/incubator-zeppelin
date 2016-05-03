@@ -21,8 +21,10 @@ package org.apache.zeppelin.alluxio;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.io.ByteArrayOutputStream;
+import java.security.PrivilegedExceptionAction;
 import java.util.*;
 
+import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.zeppelin.interpreter.Interpreter;
 import org.apache.zeppelin.interpreter.InterpreterContext;
 import org.apache.zeppelin.interpreter.InterpreterPropertyBuilder;
@@ -103,7 +105,7 @@ public class AlluxioInterpreter extends Interpreter {
     return interpret(lines, context);
   }
   
-  private InterpreterResult interpret(String[] commands, InterpreterContext context) {
+  private InterpreterResult interpret(String[] commands, InterpreterContext context) throws  Exception{
     boolean isSuccess = true;
     totalCommands = commands.length;
     completedCommands = 0;
@@ -115,12 +117,20 @@ public class AlluxioInterpreter extends Interpreter {
     System.setOut(ps);
     
     for (String command : commands) {
-      int commandResuld = 1;
-      String[] args = splitAndRemoveEmpty(command, " ");
+      final int commandResuld;
+      final String[] args = splitAndRemoveEmpty(command, " ");
       if (args.length > 0 && args[0].equals("help")) {
+        commandResuld = 1;
         System.out.println(getCommandList());
       } else {
-        commandResuld = fs.run(args);
+
+        UserGroupInformation ugi = UserGroupInformation.getCurrentUser();
+        commandResuld = ugi.doAs(new PrivilegedExceptionAction<Integer>() {
+          @Override
+          public Integer run() throws IOException {
+            return fs.run(args);
+          }
+        });
       }
       if (commandResuld != 0) {
         isSuccess = false;
