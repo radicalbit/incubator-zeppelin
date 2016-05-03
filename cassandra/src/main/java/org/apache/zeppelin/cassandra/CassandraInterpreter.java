@@ -256,8 +256,8 @@ public class CassandraInterpreter extends Interpreter {
 
   private Properties getKerberosProperties() {
     final Set<Object> keys = getProperty().keySet();
-    final Properties kerberosProperties = new Properties();
 
+    final Properties kerberosProperties = new Properties();
     for (Object k: keys) {
       String key = (String) k;
       if (key.contains("kerberos")){
@@ -300,6 +300,7 @@ public class CassandraInterpreter extends Interpreter {
       .withQueryOptions(driverConfig.getQueryOptions(this))
       .withSocketOptions(driverConfig.getSocketOptions(this));
 
+    /** Enable Kerberos */
     final Properties kerberosProperties = getKerberosProperties();
     if (kerberosProperties != null && !kerberosProperties.isEmpty()) {
       builder = builder.withAuthProvider(new KerberosAuthenticationProvider(kerberosProperties));
