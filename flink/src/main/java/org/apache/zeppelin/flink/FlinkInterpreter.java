@@ -74,9 +74,10 @@ public class FlinkInterpreter extends Interpreter {
   private static final String YARN_PROPERTIES_FILE = ".yarn-properties-";
   private static final String YARN_PROPERTIES_JOBMANAGER_KEY = "jobManager";
   private static final String FLINK_CONF_DIR_ENV = "FLINK_CONF_DIR";
-  private static final String FLINK_USER = "FLINK_USER";
+  private static final String FLINK_USER_ENV = "FLINK_USER_ENV";
   private static final String HOST = "host";
   private static final String FLINK_CONF_DIR = "flink.conf.dir";
+  private static final String FLINK_USER = "flink.user";
   static {
     Interpreter.register(
         "flink",
@@ -121,10 +122,14 @@ public class FlinkInterpreter extends Interpreter {
     return properties;
   }
 
-  private static String getUser() {
+  private String getUser() {
 
-    final String userFlinkEnv = System.getenv(FLINK_USER);
-    return (userFlinkEnv == null) ?  System.getProperty("user.name") : userFlinkEnv;
+    final String userProp = sanitize(getProperty(FLINK_USER));
+    final String user = (userProp.length() > 0)
+            ? userProp
+            : System.getenv(FLINK_USER_ENV);
+
+    return (user == null) ? System.getenv("user.name") : user;
   }
 
   private String getHost() {
@@ -133,10 +138,10 @@ public class FlinkInterpreter extends Interpreter {
 
   private String getFlinkConfiguration() {
 
-    final String flinkConfigurationEnv = System.getenv(FLINK_CONF_DIR_ENV);
-    return (flinkConfigurationEnv == null)
-            ? sanitize(getProperty(FLINK_CONF_DIR))
-            : flinkConfigurationEnv;
+    final String flinkConfigurationProp = sanitize(getProperty(FLINK_CONF_DIR));
+    return (flinkConfigurationProp.length() > 0)
+            ? flinkConfigurationProp
+            : System.getenv(FLINK_CONF_DIR_ENV);
   }
 
   private InetSocketAddress configureEnvironment() {
