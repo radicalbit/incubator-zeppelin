@@ -45,6 +45,8 @@ public class AlluxioInterpreter extends Interpreter {
 
   protected static final String ALLUXIO_MASTER_HOSTNAME = "alluxio.master.hostname";
   protected static final String ALLUXIO_MASTER_PORT = "alluxio.master.port";
+  private static final InterpreterResult RESULT_ERROR =
+          new InterpreterResult(Code.ERROR, "Authentication Failed");
 
   private AlluxioShell fs;
 
@@ -102,10 +104,16 @@ public class AlluxioInterpreter extends Interpreter {
   @Override
   public InterpreterResult interpret(String st, InterpreterContext context) {
     String[] lines = splitAndRemoveEmpty(st, "\n");
-    return interpret(lines, context);
+    try {
+      return interpret(lines, context);
+    } catch (Exception e) {
+      return RESULT_ERROR;
+    }
   }
   
-  private InterpreterResult interpret(String[] commands, InterpreterContext context) throws  Exception{
+  private InterpreterResult interpret(String[] commands, InterpreterContext context)
+      throws  Exception {
+
     boolean isSuccess = true;
     totalCommands = commands.length;
     completedCommands = 0;
