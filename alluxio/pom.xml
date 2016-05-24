@@ -34,7 +34,7 @@
     <url>http://www.apache.org</url>
 
     <properties>
-        <alluxio.version>1.0.0</alluxio.version>
+        <alluxio.version>1.1.0-rbd-001-SNAPSHOT</alluxio.version>
         <powermock.version>1.6.1</powermock.version>
     </properties>
     <dependencies>
