@@ -636,6 +636,30 @@
 
   <profiles>
     <profile>
+      <id>scala-2.10</id>
+      <properties>
+        <scala.version>2.10.5</scala.version>
+        <scala.binary.version>2.10</scala.binary.version>
+        <flink.scala.version>2.10.5</flink.scala.version>
+        <flink.scala.binary.version>2.10</flink.scala.binary.version>
+        <ignite.scala.version>2.10.5</ignite.scala.version>
+        <ignite.scala.binary.version>2.10</ignite.scala.binary.version>
+      </properties>
+    </profile>
+
+    <profile>
+      <id>scala-2.11</id>
+      <properties>
+        <scala.version>2.11.7</scala.version>
+        <scala.binary.version>2.11</scala.binary.version>
+        <flink.scala.version>2.11.7</flink.scala.version>
+        <flink.scala.binary.version>2.11</flink.scala.binary.version>
+        <ignite.scala.version>2.11.7</ignite.scala.version>
+        <ignite.scala.binary.version>2.11</ignite.scala.binary.version>
+      </properties>
+    </profile>
+
+    <profile>
       <id>vendor-repo</id>
       <repositories>
         <repository>
