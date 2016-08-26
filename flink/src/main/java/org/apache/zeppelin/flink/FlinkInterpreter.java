@@ -48,6 +48,8 @@ import scala.Some;
 import scala.runtime.AbstractFunction0;
 import scala.tools.nsc.Settings;
 import scala.tools.nsc.interpreter.IMain;
+import scala.tools.nsc.interpreter.NamedParamClass;
+import scala.tools.nsc.interpreter.NamedParamClass$;
 import scala.tools.nsc.interpreter.Results;
 import scala.tools.nsc.settings.MutableSettings.BooleanSetting;
 import scala.tools.nsc.settings.MutableSettings.PathSetting;
@@ -103,7 +105,8 @@ public class FlinkInterpreter extends Interpreter {
     
     imain.interpret("import org.apache.flink.api.scala._");
     imain.interpret("import org.apache.flink.api.common.functions._");
-    imain.bindValue("env", env);
+    imain.bind(new NamedParamClass("env",
+            "org.apache.flink.api.scala.ExecutionEnvironment", env));
   }
 
   private boolean localMode() {

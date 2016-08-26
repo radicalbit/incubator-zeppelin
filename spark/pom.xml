@@ -39,8 +39,8 @@
     <mockito.version>1.10.19</mockito.version>
     <powermock.version>1.6.4</powermock.version>
     <spark.version>1.4.1</spark.version>
-    <scala.version>2.10.4</scala.version>
-    <scala.binary.version>2.10</scala.binary.version>
+    <!--<scala.version>2.10.4</scala.version>-->
+    <!--<scala.binary.version>2.10</scala.binary.version>-->
   </properties>
 
   <dependencies>

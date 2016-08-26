@@ -55,8 +55,8 @@
     <module>zeppelin-interpreter</module>
     <module>zeppelin-zengine</module>
     <module>zeppelin-display</module>
-    <module>spark-dependencies</module>
-    <module>spark</module>
+    <!--<module>spark-dependencies</module>-->
+    <!--<module>spark</module>-->
     <module>markdown</module>
     <module>angular</module>
     <module>shell</module>
@@ -85,7 +85,8 @@
     <gson.version>2.2</gson.version>
     <guava.version>15.0</guava.version>
     <jetty.version>9.2.15.v20160210</jetty.version>
-
+    <scala.version>2.10.4</scala.version>
+    <scala.binary.version>2.10</scala.binary.version>
     <PermGen>64m</PermGen>
     <MaxPermGen>512m</MaxPermGen>
   </properties>
@@ -640,10 +641,6 @@
       <properties>
         <scala.version>2.10.5</scala.version>
         <scala.binary.version>2.10</scala.binary.version>
-        <flink.scala.version>2.10.5</flink.scala.version>
-        <flink.scala.binary.version>2.10</flink.scala.binary.version>
-        <ignite.scala.version>2.10.5</ignite.scala.version>
-        <ignite.scala.binary.version>2.10</ignite.scala.binary.version>
       </properties>
     </profile>
 
@@ -652,10 +649,6 @@
       <properties>
         <scala.version>2.11.7</scala.version>
         <scala.binary.version>2.11</scala.binary.version>
-        <flink.scala.version>2.11.7</flink.scala.version>
-        <flink.scala.binary.version>2.11</flink.scala.binary.version>
-        <ignite.scala.version>2.11.7</ignite.scala.version>
-        <ignite.scala.binary.version>2.11</ignite.scala.binary.version>
       </properties>
     </profile>
 
