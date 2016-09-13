@@ -83,13 +83,14 @@ public class FlinkInterpreter extends Interpreter {
       startFlinkMiniCluster();
     }
 
-    flinkIloop = new FlinkILoop(getHost(), getPort(), (BufferedReader) null, new PrintWriter(out));
+    flinkIloop = new FlinkILoop(getHost(), getPort(), flinkConf,
+            (BufferedReader) null, new PrintWriter(out));
     flinkIloop.settings_$eq(createSettings());
     flinkIloop.createInterpreter();
     
     imain = flinkIloop.intp();
 
-    org.apache.flink.api.scala.ExecutionEnvironment env = flinkIloop.scalaEnv();
+    org.apache.flink.api.scala.ExecutionEnvironment env = flinkIloop.scalaBenv();
     env.getConfig().disableSysoutLogging();
 
     // prepare bindings
