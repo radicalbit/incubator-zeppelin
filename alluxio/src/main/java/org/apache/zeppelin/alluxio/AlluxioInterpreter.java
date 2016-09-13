@@ -33,7 +33,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import alluxio.Configuration;
-import alluxio.shell.AlluxioShell;
+import alluxio.cli.AlluxioShell;
 
 /**
  * Alluxio interpreter for Zeppelin.
@@ -84,7 +84,7 @@ public class AlluxioInterpreter extends Interpreter {
 
     System.setProperty(ALLUXIO_MASTER_HOSTNAME, alluxioMasterHostname);
     System.setProperty(ALLUXIO_MASTER_PORT, alluxioMasterPort);
-    fs = new AlluxioShell(new Configuration());
+    fs = new AlluxioShell();
   }
 
   @Override

@@ -69,7 +69,7 @@ public class AlluxioInterpreterTest {
     fs = mLocalAlluxioCluster.getClient();
 
     final Properties props = new Properties();
-    props.put(AlluxioInterpreter.ALLUXIO_MASTER_HOSTNAME, mLocalAlluxioCluster.getMasterHostname());
+    props.put(AlluxioInterpreter.ALLUXIO_MASTER_HOSTNAME, mLocalAlluxioCluster.getMaster().getRPCBindHost());
     props.put(AlluxioInterpreter.ALLUXIO_MASTER_PORT, mLocalAlluxioCluster.getMasterPort() + "");
     alluxioInterpreter = new AlluxioInterpreter(props);
     alluxioInterpreter.open();
@@ -220,7 +220,7 @@ public class AlluxioInterpreterTest {
   @Test
   public void copyFromLocalTestWithFullURI() throws IOException, AlluxioException {
     File testFile = generateFileContent("/srcFileURI", BufferUtils.getIncreasingByteArray(10));
-    String uri = "tachyon://" + mLocalAlluxioCluster.getMasterHostname() + ":"
+    String uri = "alluxio-ft://" + mLocalAlluxioCluster.getMaster().getRPCBindHost() + ":"
             + mLocalAlluxioCluster.getMasterPort() + "/destFileURI";
 
     InterpreterResult output = alluxioInterpreter.interpret("copyFromLocal " +
@@ -433,7 +433,7 @@ public class AlluxioInterpreterTest {
   @Test
   public void mkdirTest() throws IOException, AlluxioException {
     String qualifiedPath =
-            "tachyon://" + mLocalAlluxioCluster.getMasterHostname() + ":"
+            "alluxio-ft://" + mLocalAlluxioCluster.getMaster().getRPCBindHost() + ":"
                     + mLocalAlluxioCluster.getMasterPort() + "/root/testFile1";
     InterpreterResult output = alluxioInterpreter.interpret("mkdir " + qualifiedPath, null);
     boolean existsDir = fs.exists(new AlluxioURI("/root/testFile1"));

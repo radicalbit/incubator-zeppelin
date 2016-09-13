@@ -33,7 +33,7 @@
     <name>Zeppelin: Alluxio interpreter</name>
 
     <properties>
-        <alluxio.version>1.0.0</alluxio.version>
+        <alluxio.version>1.2.0</alluxio.version>
         <powermock.version>1.6.1</powermock.version>
     </properties>
     <dependencies>
