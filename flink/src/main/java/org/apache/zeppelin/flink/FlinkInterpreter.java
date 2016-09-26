@@ -57,6 +57,9 @@ import scala.tools.nsc.settings.MutableSettings.PathSetting;
  */
 public class FlinkInterpreter extends Interpreter {
   Logger logger = LoggerFactory.getLogger(FlinkInterpreter.class);
+
+  private ZeppelinContext z;
+
   private ByteArrayOutputStream out;
   private Configuration flinkConf;
   private LocalFlinkMiniCluster localFlinkCluster;
@@ -93,9 +96,14 @@ public class FlinkInterpreter extends Interpreter {
     org.apache.flink.api.scala.ExecutionEnvironment env = flinkIloop.scalaBenv();
     env.getConfig().disableSysoutLogging();
 
+    z = new ZeppelinContext(null);
+
     // prepare bindings
     imain.interpret("@transient var _binder = new java.util.HashMap[String, Object]()");
     Map<String, Object> binder = (Map<String, Object>) getLastObject();
+
+    imain.interpret("@transient val z = "
+            + "_binder.get(\"z\").asInstanceOf[org.apache.zeppelin.flink.ZeppelinContext]");
 
     // import libraries
     imain.interpret("import scala.tools.nsc.io._");
@@ -214,6 +222,7 @@ public class FlinkInterpreter extends Interpreter {
 
   @Override
   public InterpreterResult interpret(String line, InterpreterContext context) {
+    z.setInterpreterContext(context);
     if (line == null || line.trim().length() == 0) {
       return new InterpreterResult(Code.SUCCESS);
     }
@@ -223,6 +232,7 @@ public class FlinkInterpreter extends Interpreter {
   }
 
   public InterpreterResult interpret(String[] lines, InterpreterContext context) {
+    z.setGui(context.getGui());
     final IMain imain = flinkIloop.intp();
     
     String[] linesToRun = new String[lines.length + 1];
