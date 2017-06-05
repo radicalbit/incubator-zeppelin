@@ -34,13 +34,8 @@ import org.apache.flink.runtime.akka.AkkaUtils;
 import org.apache.flink.runtime.instance.ActorGateway;
 import org.apache.flink.runtime.messages.JobManagerMessages;
 import org.apache.flink.runtime.minicluster.LocalFlinkMiniCluster;
-import org.apache.flink.runtime.util.EnvironmentInformation;
-import org.apache.zeppelin.interpreter.Interpreter;
-import org.apache.zeppelin.interpreter.InterpreterContext;
-import org.apache.zeppelin.interpreter.InterpreterPropertyBuilder;
-import org.apache.zeppelin.interpreter.InterpreterResult;
+import org.apache.zeppelin.interpreter.*;
 import org.apache.zeppelin.interpreter.InterpreterResult.Code;
-import org.apache.zeppelin.interpreter.InterpreterUtils;
 import org.apache.zeppelin.interpreter.thrift.InterpreterCompletion;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,17 +55,25 @@ import scala.tools.nsc.settings.MutableSettings;
 import scala.tools.nsc.settings.MutableSettings.BooleanSetting;
 import scala.tools.nsc.settings.MutableSettings.PathSetting;
 
+import scala.tools.nsc.typechecker.Contexts;
+
+
 /**
  * Interpreter for Apache Flink (http://flink.apache.org)
  */
 public class FlinkInterpreter extends Interpreter {
   Logger logger = LoggerFactory.getLogger(FlinkInterpreter.class);
-  private ByteArrayOutputStream out;
+
   private Configuration flinkConf;
   private LocalFlinkMiniCluster localFlinkCluster;
-  private FlinkILoop flinkIloop;
-  private Map<String, Object> binder;
   private IMain imain;
+  private FlinkILoop flinkIloop;
+  private FlinkZeppelinContext zFlink;
+  private ByteArrayOutputStream out;
+
+  private Map<String, Object> binder;
+  private static InterpreterHookRegistry hooks;
+
 
   public FlinkInterpreter(Properties property) {
     super(property);
@@ -79,6 +82,7 @@ public class FlinkInterpreter extends Interpreter {
   @Override
   public void open() {
     out = new ByteArrayOutputStream();
+
     flinkConf = new org.apache.flink.configuration.Configuration();
     Properties intpProperty = getProperty();
     for (Object k : intpProperty.keySet()) {
@@ -132,6 +136,12 @@ public class FlinkInterpreter extends Interpreter {
     imain.interpret("val senv = _binder.get(\"senv\").asInstanceOf["
             + senv.getClass().getName() + "]");
 
+
+    zFlink = new FlinkZeppelinContext(1000);
+    binder.put("zFlink", zFlink);
+    imain.interpret("val zFlink = _binder.get(\"zFlink\").asInstanceOf["
+            + zFlink.getClass().getName() + "]");
+
   }
 
   private boolean localMode() {
@@ -158,6 +168,11 @@ public class FlinkInterpreter extends Interpreter {
   private Settings createSettings() {
     URL[] urls = getClassloaderUrls();
     Settings settings = new Settings();
+
+    LinkedList<String> argList = new LinkedList<>();
+    argList.add("-Yrepl-class-based");
+    scala.collection.immutable.List<String> list = JavaConversions.asScalaBuffer(argList).toList();
+    settings.processArguments(list, true);
 
     // set classpath
     PathSetting pathSettings = settings.classpath();
@@ -192,6 +207,7 @@ public class FlinkInterpreter extends Interpreter {
     numClassFileSetting.v_$eq(128);
     settings.scala$tools$nsc$settings$ScalaSettings$_setter_$maxClassfileName_$eq(
             numClassFileSetting);
+
 
     return settings;
   }
@@ -253,6 +269,9 @@ public class FlinkInterpreter extends Interpreter {
   }
 
   public InterpreterResult interpret(String[] lines, InterpreterContext context) {
+
+    zFlink.setInterpreterContext(context);
+
     final IMain imain = flinkIloop.intp();
     
     String[] linesToRun = new String[lines.length + 1];
