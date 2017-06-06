@@ -71,6 +71,7 @@ public class FlinkInterpreter extends Interpreter {
   private FlinkILoop flinkIloop;
   private Map<String, Object> binder;
   private IMain imain;
+  private FlinkZeppelinContext zFlink;
 
   public FlinkInterpreter(Properties property) {
     super(property);
@@ -132,6 +133,11 @@ public class FlinkInterpreter extends Interpreter {
     imain.interpret("val senv = _binder.get(\"senv\").asInstanceOf["
             + senv.getClass().getName() + "]");
 
+    zFlink = new FlinkZeppelinContext(1000);
+    binder.put("zFlink", zFlink);
+    imain.interpret("val zFlink = _binder.get(\"zFlink\").asInstanceOf["
+        + zFlink.getClass().getName() + "]");
+
   }
 
   private boolean localMode() {
@@ -158,6 +164,11 @@ public class FlinkInterpreter extends Interpreter {
   private Settings createSettings() {
     URL[] urls = getClassloaderUrls();
     Settings settings = new Settings();
+
+    LinkedList<String> argList = new LinkedList<>();
+    argList.add("-Yrepl-class-based");
+    scala.collection.immutable.List<String> list = JavaConversions.asScalaBuffer(argList).toList();
+    settings.processArguments(list, true);
 
     // set classpath
     PathSetting pathSettings = settings.classpath();
@@ -253,6 +264,8 @@ public class FlinkInterpreter extends Interpreter {
   }
 
   public InterpreterResult interpret(String[] lines, InterpreterContext context) {
+    zFlink.setInterpreterContext(context);
+
     final IMain imain = flinkIloop.intp();
     
     String[] linesToRun = new String[lines.length + 1];
