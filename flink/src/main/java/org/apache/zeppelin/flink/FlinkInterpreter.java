@@ -74,7 +74,6 @@ public class FlinkInterpreter extends Interpreter {
   private Map<String, Object> binder;
   private static InterpreterHookRegistry hooks;
 
-
   public FlinkInterpreter(Properties property) {
     super(property);
   }
@@ -207,7 +206,6 @@ public class FlinkInterpreter extends Interpreter {
     numClassFileSetting.v_$eq(128);
     settings.scala$tools$nsc$settings$ScalaSettings$_setter_$maxClassfileName_$eq(
             numClassFileSetting);
-
 
     return settings;
   }
