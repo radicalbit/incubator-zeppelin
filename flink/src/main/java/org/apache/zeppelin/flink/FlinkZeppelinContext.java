@@ -226,8 +226,8 @@ public class FlinkZeppelinContext extends BaseZeppelinContext {
       }
     }
 
-    if (replName.contains("spark.")) {
-      replName = replName.replace("spark.", "");
+    if (replName.contains("flink.")) {
+      replName = replName.replace("flink.", "");
     }
     return getInterpreterClassMap().get(replName);
   }
