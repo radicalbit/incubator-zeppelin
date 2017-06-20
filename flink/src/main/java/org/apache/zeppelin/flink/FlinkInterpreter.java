@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -94,11 +94,29 @@ public class FlinkInterpreter extends Interpreter {
       startFlinkMiniCluster();
     }
 
+    String[] externalJars = new String[0];
+    String localRepo = getProperty("zeppelin.interpreter.localRepo");
+    if (localRepo != null) {
+      File localRepoDir = new File(localRepo);
+      if (localRepoDir.exists()) {
+        File[] files = localRepoDir.listFiles();
+        if (files != null) {
+          externalJars = new String[files.length];
+          for (int i = 0; i < files.length; i++) {
+            if (externalJars.length > 0) {
+              externalJars[i] = files[i].getAbsolutePath();
+            }
+          }
+        }
+      }
+    }
+
     flinkIloop = new FlinkILoop(getHost(),
-                                getPort(),
-                                flinkConf,
-                                (BufferedReader) null,
-                                new PrintWriter(out));
+        getPort(),
+        flinkConf,
+        new Some<String[]>(externalJars),
+        (BufferedReader) null,
+        new PrintWriter(out));
 
     flinkIloop.settings_$eq(createSettings());
     flinkIloop.createInterpreter();
@@ -106,10 +124,10 @@ public class FlinkInterpreter extends Interpreter {
     imain = flinkIloop.intp();
 
     org.apache.flink.api.scala.ExecutionEnvironment benv =
-            flinkIloop.scalaBenv();
-            //new ExecutionEnvironment(remoteBenv)
+        flinkIloop.scalaBenv();
+    //new ExecutionEnvironment(remoteBenv)
     org.apache.flink.streaming.api.scala.StreamExecutionEnvironment senv =
-            flinkIloop.scalaSenv();
+        flinkIloop.scalaSenv();
 
     senv.getConfig().disableSysoutLogging();
     benv.getConfig().disableSysoutLogging();
@@ -129,17 +147,17 @@ public class FlinkInterpreter extends Interpreter {
 
     binder.put("benv", benv);
     imain.interpret("val benv = _binder.get(\"benv\").asInstanceOf["
-            + benv.getClass().getName() + "]");
+        + benv.getClass().getName() + "]");
 
     binder.put("senv", senv);
     imain.interpret("val senv = _binder.get(\"senv\").asInstanceOf["
-            + senv.getClass().getName() + "]");
+        + senv.getClass().getName() + "]");
 
 
     zFlink = new FlinkZeppelinContext(1000);
     binder.put("zFlink", zFlink);
     imain.interpret("val zFlink = _binder.get(\"zFlink\").asInstanceOf["
-            + zFlink.getClass().getName() + "]");
+        + zFlink.getClass().getName() + "]");
 
   }
 
@@ -205,11 +223,10 @@ public class FlinkInterpreter extends Interpreter {
     MutableSettings.IntSetting numClassFileSetting = settings.maxClassfileName();
     numClassFileSetting.v_$eq(128);
     settings.scala$tools$nsc$settings$ScalaSettings$_setter_$maxClassfileName_$eq(
-            numClassFileSetting);
+        numClassFileSetting);
 
     return settings;
   }
-  
 
   private List<File> currentClassPath() {
     List<File> paths = classPath(Thread.currentThread().getContextClassLoader());
@@ -271,7 +288,7 @@ public class FlinkInterpreter extends Interpreter {
     zFlink.setInterpreterContext(context);
 
     final IMain imain = flinkIloop.intp();
-    
+
     String[] linesToRun = new String[lines.length + 1];
     for (int i = 0; i < lines.length; i++) {
       linesToRun[i] = lines[i];
@@ -292,9 +309,9 @@ public class FlinkInterpreter extends Interpreter {
         String nextLine = linesToRun[l + 1].trim();
         boolean continuation = false;
         if (nextLine.isEmpty()
-                || nextLine.startsWith("//")         // skip empty line or comment
-                || nextLine.startsWith("}")
-                || nextLine.startsWith("object")) { // include "} object" for Scala companion object
+            || nextLine.startsWith("//")         // skip empty line or comment
+            || nextLine.startsWith("}")
+            || nextLine.startsWith("object")) { // include "} object" for Scala companion object
           continuation = true;
         } else if (!inComment && nextLine.startsWith("/*")) {
           inComment = true;
@@ -303,9 +320,9 @@ public class FlinkInterpreter extends Interpreter {
           inComment = false;
           continuation = true;
         } else if (nextLine.length() > 1
-                && nextLine.charAt(0) == '.'
-                && nextLine.charAt(1) != '.'     // ".."
-                && nextLine.charAt(1) != '/') {  // "./"
+            && nextLine.charAt(0) == '.'
+            && nextLine.charAt(1) != '.'     // ".."
+            && nextLine.charAt(1) != '/') {  // "./"
           continuation = true;
         } else if (inComment) {
           continuation = true;
@@ -321,13 +338,13 @@ public class FlinkInterpreter extends Interpreter {
       scala.tools.nsc.interpreter.Results.Result res = null;
       try {
         res = Console.withOut(
-          System.out,
-          new AbstractFunction0<Results.Result>() {
-            @Override
-            public Results.Result apply() {
-              return imain.interpret(currentCommand + s);
-            }
-          });
+            System.out,
+            new AbstractFunction0<Results.Result>() {
+              @Override
+              public Results.Result apply() {
+                return imain.interpret(currentCommand + s);
+              }
+            });
       } catch (Exception e) {
         logger.info("Interpreter exception", e);
         return new InterpreterResult(Code.ERROR, InterpreterUtils.getMostRelevantMessage(e));
@@ -373,7 +390,7 @@ public class FlinkInterpreter extends Interpreter {
     }
   }
 
-  private void cancelJobLocalMode(JobID jobID){
+  private void cancelJobLocalMode(JobID jobID) {
     FiniteDuration timeout = AkkaUtils.getTimeout(this.localFlinkCluster.configuration());
     ActorGateway leader = this.localFlinkCluster.getLeaderGateway(timeout);
     leader.ask(new JobManagerMessages.CancelJob(jobID), timeout);
@@ -399,7 +416,7 @@ public class FlinkInterpreter extends Interpreter {
 
     try {
       localFlinkCluster.start(true);
-    } catch (Exception e){
+    } catch (Exception e) {
       throw new RuntimeException("Could not start Flink mini cluster.", e);
     }
   }
@@ -414,5 +431,5 @@ public class FlinkInterpreter extends Interpreter {
   static final String toString(Object o) {
     return (o instanceof String) ? (String) o : "";
   }
-  
+
 }
