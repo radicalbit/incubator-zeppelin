@@ -20,27 +20,51 @@ package org.apache.zeppelin.flink;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
-import java.util.Arrays;
-import java.util.Properties;
+import java.io.File;
+import java.io.IOException;
+import java.util.*;
 
+import org.apache.zeppelin.dep.DependencyResolver;
+import org.apache.zeppelin.helium.Application;
 import org.apache.zeppelin.interpreter.InterpreterContext;
+import org.apache.zeppelin.interpreter.InterpreterOption;
 import org.apache.zeppelin.interpreter.InterpreterResult;
 import org.apache.zeppelin.interpreter.InterpreterResult.Code;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
+import org.sonatype.aether.RepositoryException;
 
 public class FlinkInterpreterTest {
 
   private static FlinkInterpreter flink;
   private static InterpreterContext context;
+  private static String tmpDir;
+  private static DependencyResolver resolver;
 
   @BeforeClass
-  public static void setUp() {
-    Properties p = new Properties();
+  public static void setUp() throws IOException, RepositoryException {
+    tmpDir = "/tmp/local-repo-"+System.currentTimeMillis();
+    Properties p = getFlinkTestProperties(tmpDir, "localhost", false);
+
     flink = new FlinkInterpreter(p);
     flink.open();
+
     context = new InterpreterContext(null, null, null, null, null, null, null, null, null, null, null, null);
+  }
+
+  public static Properties getFlinkTestProperties(String localRepo, String host, boolean highAvailability) throws IOException {
+    Properties p = new Properties();
+    p.setProperty("host", host);
+    p.setProperty("port", "6123");
+    p.setProperty("zeppelin.interpreter.localRepo", localRepo);
+    if(highAvailability) {
+      p.setProperty("high-availability", "zookeeper");
+      p.setProperty("high-availability.zookeeper.quorum", "localhost:2181");
+      p.setProperty("high-availability.zookeeper.storageDir", "file:///tmp");
+    }
+    return p;
   }
 
   @AfterClass
