@@ -25,6 +25,8 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.google.gson.internal.StringMap;
 import com.google.gson.reflect.TypeToken;
 import java.io.BufferedReader;
@@ -61,6 +63,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.zeppelin.conf.ZeppelinConfiguration.ConfVars;
@@ -160,9 +163,11 @@ public class InterpreterSettingManager {
       return;
     }
     InterpreterInfoSaving infoSaving;
-    try (BufferedReader json =
+    try (BufferedReader jsonReader =
         Files.newBufferedReader(interpreterBindingPath, StandardCharsets.UTF_8)) {
-      infoSaving = gson.fromJson(json, InterpreterInfoSaving.class);
+      JsonParser jsonParser = new JsonParser();
+      JsonObject jsonObject = jsonParser.parse(jsonReader).getAsJsonObject();
+      infoSaving = gson.fromJson(jsonObject.toString(), InterpreterInfoSaving.class);
 
       for (String k : infoSaving.interpreterSettings.keySet()) {
         InterpreterSetting setting = infoSaving.interpreterSettings.get(k);
@@ -181,6 +186,9 @@ public class InterpreterSettingManager {
         // enable/disable option on GUI).
         // previously created setting should turn this feature on here.
         setting.getOption().setRemote(true);
+
+        setting.convertPermissionsFromUsersToOwners(
+            jsonObject.getAsJsonObject("interpreterSettings").getAsJsonObject(setting.getId()));
 
         // Update transient information from InterpreterSettingRef
         InterpreterSetting interpreterSettingObject =
@@ -230,7 +238,7 @@ public class InterpreterSettingManager {
       info.interpreterSettings = interpreterSettings;
       info.interpreterRepositories = interpreterRepositories;
 
-      jsonString = gson.toJson(info);
+      jsonString = info.toJson();
     }
 
     if (!Files.exists(interpreterBindingPath)) {
